@@ -10,7 +10,7 @@
 void gpu_sgemm(
     float *a, float *b, float *c,
     size_t N, size_t M, size_t K,
-    float alpha, float beta)
+    float alpha, float beta, int kernel_type)
 {
     float *dev_a = 0;
     float *dev_b = 0;
@@ -27,7 +27,28 @@ void gpu_sgemm(
     cudaMemcpy(dev_b, b, K * N * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_c, c, M * N * sizeof(float), cudaMemcpyHostToDevice);
     
-    cuda_kernel_sgemm<<<M, N>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
+    int grid_r = M / 32;
+    int grid_c = N / 32;
+    if(M % 32 != 0)
+        grid_r += 1;
+    if(N % 32 != 0)
+        grid_c += 1;
+    dim3 grid_d(grid_r, grid_c, 1);
+    dim3 block_d(32, 32, 1);
+    switch(kernel_type)
+    {
+        case 0: 
+        {
+            cuda_kernel_sgemm_0<<<grid_d, block_d>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
+            break;
+        }
+        case 1:
+        {
+            cuda_kernel_sgemm_1<<<grid_d, block_d>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
+            break;
+        }
+    }
+    
     cudaDeviceSynchronize();
 
     cudaMemcpy(c, dev_c, M * N * sizeof(float), cudaMemcpyDeviceToHost);
