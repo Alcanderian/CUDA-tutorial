@@ -5,7 +5,7 @@ TARGET=sample
 
 CFLAGS= -O3 -qopenmp -std=c++11
 CUFLAGS= -O3 -arch=sm_37 -ccbin=$(CC) -std=c++11 -Xcompiler -qopenmp
-LDFLAGS= -arch=sm_37 -ccbin=$(CC) -std=c++11 -Xcompiler -qopenmp
+LDFLAGS= -arch=sm_37 -ccbin=$(CC) -std=c++11 -lcublas -Xcompiler -qopenmp,-mkl
 
 CPOBJS= sample.o
 CUOBJS= interfaces.o
