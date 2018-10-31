@@ -5,7 +5,7 @@
 #include "interfaces.h"
 #include "kernels.cuh"
 
-void run_vadds(
+void gpu_vadds(
     float *a, float *b, float *c, size_t arr_size,
     size_t grid_x, size_t block_x)
 {

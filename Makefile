@@ -4,5 +4,5 @@ all:$(SAMPLES)
 
 .PHONY: vadds
 vadds:
-	@(cd ./vadds && make && cd .. && cp ./vadds/sample ./sample_vadds) || exit 1
+	@(cd ./vadds && make && cd .. && mv ./vadds/sample ./sample_vadds) || exit 1
 	

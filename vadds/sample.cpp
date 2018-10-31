@@ -19,7 +19,7 @@ int main()
         b[i] = cosf(f) * cosf(f);
     }
     
-    run_vadds(a, b, c, arr_size, 128, 640);
+    gpu_vadds(a, b, c, arr_size, 128, 1024);
     verify_vadds(a, b, c, arr_size);
     return 0;
 }
