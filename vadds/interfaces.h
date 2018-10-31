@@ -6,6 +6,7 @@
 void gpu_vadds(
     float *a, float *b, float *c, size_t arr_size,
     size_t grid_x, size_t block_x);
-void verify_vadds( float *a, float *b, float *c, size_t arr_size);
-
+void gpu_warmup();
+void cpu_vadds(float *a, float *b, float *c, size_t arr_size);
+void cpu_warmup();
 #endif

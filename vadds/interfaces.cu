@@ -4,6 +4,7 @@
 
 #include "interfaces.h"
 #include "kernels.cuh"
+#include "../prof.h"
 
 void gpu_vadds(
     float *a, float *b, float *c, size_t arr_size,
@@ -12,77 +13,83 @@ void gpu_vadds(
     float *dev_a = 0;
     float *dev_b = 0;
     float *dev_c = 0;
-    cudaError_t cudaStatus;
-
-    printf("[vadds start]\n");
 
     size_t load_size = arr_size / (grid_x * block_x);
     if (load_size * grid_x * block_x != arr_size)
         load_size += 1;
     size_t tot_size = load_size * grid_x * block_x;
 
-    printf("[vadds alloc]: arr_size= %llu, load_size= %llu, tot_size= %llu, threads= %llu\n", arr_size, load_size, tot_size, grid_x * block_x);
+    hs_timer timer;
+    timer.tic("gpu vadds");
 
     cudaMalloc((void **)&dev_a, tot_size * sizeof(float));
     cudaMalloc((void **)&dev_b, tot_size * sizeof(float));
     cudaMalloc((void **)&dev_c, tot_size * sizeof(float));
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess)
-    {
-        printf("[runtime error][%s %s]: %s\n", __FILE__, __LINE__, cudaGetErrorString(cudaStatus));
-        return;
-    }
 
     cudaMemcpy(dev_a, a, arr_size * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_b, b, arr_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess)
-    {
-        printf("[runtime error][%s %s]: %s\n", __FILE__, __LINE__, cudaGetErrorString(cudaStatus));
-        return;
-    }
 
-    dim3 grid_size(grid_x, 1, 1);
-    dim3 block_size(block_x, 1, 1);
-    cuda_kernel_vadds<<<grid_size, block_size>>>(dev_a, dev_b, dev_c, load_size);
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess)
-    {
-        printf("[runtime error][%s %s]: %s\n", __FILE__, __LINE__, cudaGetErrorString(cudaStatus));
-        return;
-    }
+    cuda_kernel_vadds<<<grid_x, block_x>>>(dev_a, dev_b, dev_c, load_size);
 
     cudaDeviceSynchronize();
+
     cudaMemcpy(c, dev_c, arr_size * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess)
-    {
-        printf("[runtime error][%s %s]: %s\n", __FILE__, __LINE__, cudaGetErrorString(cudaStatus));
-        return;
-    }
 
     cudaFree(dev_a);
     cudaFree(dev_b);
     cudaFree(dev_c);
 
-    printf("[vadds finish]\n");
+    timer.toc("gpu vadds");
 }
 
-void verify_vadds(float *a, float *b, float *c, size_t arr_size)
+void gpu_warmup()
 {
-    printf("[vadds verifying]\n");
-    int pass = 1;
-    for (size_t i = 0; i < arr_size; ++i)
+    float *dev_p = 0;
+
+    hs_timer timer;
+    timer.tic("gpu warmup");
+
+    cudaMalloc((void **)&dev_p, 16 * 32 * sizeof(float));
+
+    cuda_kernel_warmup<<<16, 32>>>(dev_p);
+
+    cudaDeviceSynchronize();
+
+    cudaFree(dev_p);
+
+    timer.toc("gpu warmup");
+}
+
+void cpu_vadds(float *a, float *b, float *c, size_t arr_size)
+{
+    hs_timer timer;
+    timer.tic("cpu vadds");
+
+#pragma omp parallel for simd
+    for (size_t i = 0; i < arr_size; i++)
     {
-        if (fabs(a[i] + b[i] - c[i]) > 1e-7)
-        {
-            pass = 0;
-            printf("[vadds wrong answer]: at= %llu, std= %f\t, ans= %f\t\n", i, a[i] + b[i], c[i]);
-            break;
-        }
+        c[i] = a[i] + b[i];
     }
-    if (pass)
+
+    timer.toc("cpu vadds");
+}
+
+void cpu_warmup()
+{
+    hs_timer timer;
+    timer.tic("cpu warmup");
+
+    const size_t arr_size = 1024;
+    float *p = new float[arr_size];
+
+#pragma omp parallel for simd
+    for (size_t i = 0; i < arr_size; i++)
     {
-        printf("[vadds accept]\n");
+        float f = (float)i;
+        p[i] = f * f * f;
     }
+
+    delete p;
+
+    timer.toc("cpu warmup");
 }
