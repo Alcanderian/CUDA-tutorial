@@ -64,7 +64,7 @@ int main()
     printf("[cpu sgemm kernel 0]\n");
     cpu_sgemm(a, b, c1, N, M, K, alpha, beta, 0);
 
-    float eps = 1e-5;
+    float eps = 1e-5; // mkl's error is larger, why?
     printf("[cpu sgemm kernel mkl]\n");
     cpu_sgemm(a, b, cm, N, M, K, alpha, beta, 'm');
     verify(c1, cm, M * N, eps);
