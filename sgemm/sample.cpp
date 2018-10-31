@@ -22,7 +22,7 @@ void verify(float *a, float *b, size_t arr_size, float eps)
 int main()
 {
     // dont use 2^n, it will cause cache crash
-    const size_t N = 4000, M = 3000, K = 5000;
+    const size_t N = 4000, M = 6000, K = 5000;
     const float alpha = M_PI, beta = M_E;
     float *a = new float[M * K];
     float *b = new float[K * N];

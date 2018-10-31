@@ -7,6 +7,7 @@
 
 #include "interfaces.h"
 #include "kernels.cuh"
+#include "kernels.h"
 #include "../prof.h"
 
 void gpu_sgemm(
@@ -34,23 +35,31 @@ void gpu_sgemm(
     cudaMemcpy(dev_b, b, K * N * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_c, c, M * N * sizeof(float), cudaMemcpyHostToDevice);
 
-    int grid_r = M / 32;
-    int grid_c = N / 32;
-    if (M % 32 != 0)
-        grid_r += 1;
-    if (N % 32 != 0)
-        grid_c += 1;
-    dim3 grid_d(grid_r, grid_c, 1);
-    dim3 block_d(32, 32, 1);
     switch (kernel_type)
     {
     case 0:
     {
+        int grid_r = M / 32;
+        int grid_c = N / 32;
+        if (M % 32 != 0)
+            grid_r += 1;
+        if (N % 32 != 0)
+            grid_c += 1;
+        dim3 grid_d(grid_r, grid_c, 1);
+        dim3 block_d(32, 32, 1);
         cuda_kernel_sgemm_0<<<grid_d, block_d>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
         break;
     }
     case 1:
     {
+        int grid_r = M / 32;
+        int grid_c = N / 32;
+        if (M % 32 != 0)
+            grid_r += 1;
+        if (N % 32 != 0)
+            grid_c += 1;
+        dim3 grid_d(grid_r, grid_c, 1);
+        dim3 block_d(32, 32, 1);
         cuda_kernel_sgemm_1<<<grid_d, block_d>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
         break;
     }
@@ -96,42 +105,23 @@ void gpu_warmup()
 void cpu_sgemm(
     float *a, float *b, float *c,
     size_t N, size_t M, size_t K,
-    float alpha, float beta, int lib_type)
+    float alpha, float beta, int kernel_type)
 {
     hs_timer timer;
     timer.tic("cpu sgemm");
 
-    if (lib_type == 0)
+    switch (kernel_type)
     {
-#define idx(ri, ci, nc) ((ri) * (nc) + (ci))
-        float *bt = new float[K * N];
-#pragma omp parallel for simd
-        for (int n = 0; n < N; ++n)
-        {
-            for (int k = 0; k < K; ++k)
-            {
-                bt[idx(n, k, K)] = b[idx(k, n, N)];
-            }
-        }
-#pragma omp parallel for simd
-        for (int m = 0; m < M; ++m)
-        {
-            for (int n = 0; n < N; ++n)
-            {
-                float acc = 0.0f;
-                for (int k = 0; k < K; ++k)
-                {
-                    acc += a[idx(m, k, K)] * bt[idx(n, k, K)];
-                }
-                c[idx(m, n, N)] = alpha * acc + beta * c[idx(m, n, N)];
-            }
-        }
-        delete bt;
-#undef idx
+    case 0:
+    {
+        cpu_kernel_sgemm_0(a, b, c, N, M, K, alpha, beta);
+        break;
     }
-    else if (lib_type == 'm')
+    case 'm':
     {
         cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, M, K, alpha, b, N, a, K, beta, c, N);
+        break;
+    }
     }
     timer.toc("cpu sgemm");
 }
