@@ -20,7 +20,7 @@ void verify(float *a, float *b, size_t arr_size)
 
 int main()
 {
-    const size_t arr_size = 512 * 1024 * 1024;
+    const size_t arr_size = 500 * 1000 * 1000;
     float *a = new float[arr_size];
     float *b = new float[arr_size];
     float *c1 = new float[arr_size];
@@ -35,10 +35,10 @@ int main()
     }
     gpu_warmup();
     cpu_warmup();
-    for (int i = 0; i < 10; ++i)
+    for (int i = 1; i <= 10; ++i)
     {
-        const size_t used_size = (1 << i) * 1024 * 1024;
-        printf("[test case %d]: data_size= %d MiB\n", i, (1 << i) * sizeof(float));
+        const size_t used_size = 50 * i * 1000 * 1000;
+        printf("[test case %d]: data_size= %d B\n", i, used_size * sizeof(float));
         gpu_vadds(a, b, c1, used_size, 128, 1024);
         cpu_vadds(a, b, c2, used_size);
         verify(c1, c2, used_size);
