@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <omp.h>
+#include <algorithm>
 
 #include "interfaces.h"
 
@@ -21,8 +22,17 @@ void verify(float *a, float *b, size_t arr_size, float eps)
 
 int main()
 {
-    // dont use 2^n, it will cause cache crash
-    const size_t N = 4000, M = 4000, K = 4000;
+    // dont use 2^n, it will cause cache crash on CPU
+    size_t N, M, K;
+    char *N_s = getenv("N");
+    char *M_s = getenv("M");
+    char *K_s = getenv("K");
+    if (N_s != NULL)
+        N = std::max(atoi(N_s), 320);
+    if (M_s != NULL)
+        M = std::max(atoi(M_s), 320);
+    if (K_s != NULL)
+        K = std::max(atoi(K_s), 320);
     const float alpha = M_PI, beta = M_E;
     float *a = new float[M * K];
     float *b = new float[K * N];
@@ -40,20 +50,20 @@ int main()
 #pragma omp for
         for (size_t i = 0; i < M * K; ++i)
         {
-            float f= (float)i;
+            float f = (float)i;
             a[i] = cosf(f) * cosf(f);
         }
 
 #pragma omp for
         for (size_t i = 0; i < K * N; ++i)
         {
-            float f= (float)i;
+            float f = (float)i;
             b[i] = sinf(f) * sinf(f);
         }
 #pragma omp for
         for (size_t i = 0; i < M * N; ++i)
         {
-            float f= (float)i;
+            float f = (float)i;
             c1[i] = cosf(f) * sinf(f);
             c2[i] = cosf(f) * sinf(f);
             c3[i] = cosf(f) * sinf(f);
@@ -62,7 +72,7 @@ int main()
             cm[i] = cosf(f) * sinf(f);
         }
     }
-    
+
     gpu_warmup();
     cpu_warmup();
     printf("[cpu sgemm kernel 0]\n");

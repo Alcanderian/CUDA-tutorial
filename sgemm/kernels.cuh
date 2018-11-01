@@ -69,6 +69,7 @@ __global__ void cuda_kernel_sgemm_1(
 
         __syncthreads();
 
+#pragma unroll
         for (int k = 0; k < 32; ++k)
         {
             acc += a_sub[tr][k] * b_sub[k][tc];
@@ -117,7 +118,8 @@ __global__ void cuda_kernel_sgemm_2(
             b_sub[tr][tc] = __ldg(&b[idx(b_ir, b_ic, N)]);
 
         __syncthreads();
-
+        
+#pragma unroll
         for (int k = 0; k < 32; ++k)
         {
             acc += a_sub[tr][k] * b_sub[k][tc];
