@@ -22,15 +22,18 @@ void verify(float *a, float *b, size_t arr_size, float eps)
 int main()
 {
     // dont use 2^n, it will cause cache crash
-    const size_t N = 4000, M = 6000, K = 5000;
+    const size_t N = 4000, M = 4000, K = 4000;
     const float alpha = M_PI, beta = M_E;
     float *a = new float[M * K];
     float *b = new float[K * N];
     float *c1 = new float[M * N];
     float *c2 = new float[M * N];
     float *c3 = new float[M * N];
+    float *c4 = new float[M * N];
     float *cb = new float[M * N];
     float *cm = new float[M * N];
+
+    printf("[data size]: A(%llux%llu), B(%llux%llu)\n", M, K, K, N);
 
 #pragma omp parallel
     {
@@ -54,6 +57,7 @@ int main()
             c1[i] = cosf(f) * sinf(f);
             c2[i] = cosf(f) * sinf(f);
             c3[i] = cosf(f) * sinf(f);
+            c4[i] = cosf(f) * sinf(f);
             cb[i] = cosf(f) * sinf(f);
             cm[i] = cosf(f) * sinf(f);
         }
@@ -76,6 +80,9 @@ int main()
     printf("[gpu sgemm kernel 1]\n");
     gpu_sgemm(a, b, c3, N, M, K, alpha, beta, 1);
     verify(c1, c3, M * N, eps);
+    printf("[gpu sgemm kernel 2]\n");
+    gpu_sgemm(a, b, c4, N, M, K, alpha, beta, 2);
+    verify(c1, c4, M * N, eps);
     printf("[gpu sgemm kernel cublas]\n");
     gpu_sgemm(a, b, cb, N, M, K, alpha, beta, 'b');
     verify(c1, cb, M * N, eps);
@@ -85,6 +92,7 @@ int main()
     delete c1;
     delete c2;
     delete c3;
+    delete c4;
     delete cb;
     delete cm;
     return 0;

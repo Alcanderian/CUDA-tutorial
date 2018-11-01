@@ -63,6 +63,19 @@ void gpu_sgemm(
         cuda_kernel_sgemm_1<<<grid_d, block_d>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
         break;
     }
+    case 2:
+    {
+        int grid_r = M / 32;
+        int grid_c = N / 32;
+        if (M % 32 != 0)
+            grid_r += 1;
+        if (N % 32 != 0)
+            grid_c += 1;
+        dim3 grid_d(grid_r, grid_c, 1);
+        dim3 block_d(32, 32, 1);
+        cuda_kernel_sgemm_2<<<grid_d, block_d>>>(dev_a, dev_b, dev_c, N, M, K, alpha, beta);
+        break;
+    }
     case 'b':
     {
         cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, dev_b, N, dev_a, K, &beta, dev_c, N);
